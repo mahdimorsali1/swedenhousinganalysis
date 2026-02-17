@@ -1,0 +1,6 @@
+[
+  { "id": 1, "title": "Stockholm apartment", "priceSek": 6950000, "lat": 59.3293, "lng": 18.0686 },
+  { "id": 2, "title": "Göteborg villa",     "priceSek": 5200000, "lat": 57.7089, "lng": 11.9746 },
+  { "id": 3, "title": "Malmö townhouse",    "priceSek": 4100000, "lat": 55.604981, "lng": 13.003822 },
+  { "id": 4, "title": "Umeå house",         "priceSek": 3250000, "lat": 63.8258, "lng": 20.2630 }
+]
