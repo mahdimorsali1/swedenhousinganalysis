@@ -1,0 +1,11 @@
+// Quick logic snippet for your ranking
+var map = L.map('map').setView([59.3293, 18.0686], 5); // Center on Stockholm
+
+// Add a tile layer (the actual map image)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// Add a marker with a color based on price rank
+L.circle([59.3, 18.0], {
+    color: 'red', // Red for expensive, Green for "deal"
+    radius: 500
+}).addTo(map).bindPopup("Rank: #1 - High Value Area");
