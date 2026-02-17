@@ -1,11 +1,118 @@
-// Quick logic snippet for your ranking
-var map = L.map('map').setView([59.3293, 18.0686], 5); // Center on Stockholm
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sweden Home Ranking Demo</title>
 
-// Add a tile layer (the actual map image)
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  <!-- Leaflet (CDN) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
-// Add a marker with a color based on price rank
-L.circle([59.3, 18.0], {
-    color: 'red', // Red for expensive, Green for "deal"
-    radius: 500
-}).addTo(map).bindPopup("Rank: #1 - High Value Area");
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    header { padding: 12px 14px; border-bottom: 1px solid #e8e8e8; }
+    #wrap { display: grid; grid-template-columns: 360px 1fr; height: calc(100vh - 54px); }
+    #list { overflow: auto; padding: 12px 14px; border-right: 1px solid #eee; }
+    #map { height: 100%; }
+    .row { padding: 10px 8px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
+    .row:hover { background: #fafafa; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #ddd; font-size: 12px; }
+    .muted { color: #666; font-size: 13px; margin-top: 4px; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <strong>Sweden Home Ranking (Demo v0)</strong>
+    <span class="muted"> — sample data, ranked by price (highest = #1)</span>
+  </header>
+
+  <div id="wrap">
+    <div id="list"></div>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    // Center on Sweden
+    const map = L.map("map").setView([62.0, 15.0], 5);
+
+    // OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const fmtSek = (n) => new Intl.NumberFormat("sv-SE").format(n) + " kr";
+
+    function markerRadius(rank) {
+      // Bigger for better rank (1 is best)
+      return Math.max(6, 16 - rank * 2);
+    }
+
+    function markerColor(rank) {
+      // Simple rank bands
+      if (rank === 1) return "#d7191c";
+      if (rank === 2) return "#fdae61";
+      if (rank === 3) return "#abd9e9";
+      return "#2c7bb6";
+    }
+
+    async function main() {
+      const res = await fetch("./data.json");
+      const homes = await res.json();
+
+      // Rank by price descending (highest price = rank 1)
+      const ranked = [...homes].sort((a, b) => b.priceSek - a.priceSek)
+        .map((h, idx) => ({ ...h, rank: idx + 1 }));
+
+      const list = document.getElementById("list");
+      const markers = new Map();
+
+      ranked.forEach((h) => {
+        // Side list item
+        const div = document.createElement("div");
+        div.className = "row";
+        div.innerHTML = `
+          <div><span class="pill">#${h.rank}</span> <strong>${h.title}</strong></div>
+          <div class="muted">${fmtSek(h.priceSek)}</div>
+        `;
+        list.appendChild(div);
+
+        // Marker
+        const m = L.circleMarker([h.lat, h.lng], {
+          radius: markerRadius(h.rank),
+          color: markerColor(h.rank),
+          weight: 2,
+          fillOpacity: 0.35
+        }).addTo(map);
+
+        m.bindPopup(`<strong>#${h.rank} — ${h.title}</strong><br/>Price: ${fmtSek(h.priceSek)}`);
+
+        markers.set(h.id, m);
+
+        // Click list -> zoom marker
+        div.addEventListener("click", () => {
+          map.setView([h.lat, h.lng], 10);
+          m.openPopup();
+        });
+      });
+
+      // Fit bounds to markers
+      const bounds = L.latLngBounds(ranked.map(h => [h.lat, h.lng]));
+      map.fitBounds(bounds.pad(0.2));
+    }
+
+    main();
+  </script>
+</body>
+</html>
